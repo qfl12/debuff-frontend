@@ -29,30 +29,30 @@
 
           <!-- 用户头像及信息 -->
           <div class="user-profile" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
-            <img :src="authStore.user.avatar || '@/assets/default-avatar.svg'" alt="用户头像" class="avatar">
+            <img :src="`${$imageBaseUrl}${authStore.user.avatarUrl || '/avatars/default-avatar.svg'}`" alt="用户头像" class="info-avatar" @error="handleAvatarError($event)" @click="goToAccountSettings('/profile')">
             <span class="level-badge">Lv{{ authStore.user.level || 1 }}</span>
 
             <!-- 用户信息卡片（下拉菜单） -->
             <div class="user-info-card" v-if="showUserInfo">
               <div class="user-info-header">
-                <img :src="authStore.user.avatar || '@/assets/default-avatar.svg'" alt="用户头像" class="info-avatar">
-                <div class="user-info-main">
+                <img :src="`${$imageBaseUrl}${authStore.user.avatarUrl || '/avatars/default-avatar.svg'}`" alt="用户头像" class="info-avatar" @error="handleAvatarError($event)" @click="goToAccountSettings('/profile')">
+                <div class="user-info-main" @click="goToAccountSettings('/profile')">
                   <div class="username">{{ authStore.user.username || '未知用户' }}</div>
                   <div class="user-id">U{{ authStore.user.id || '0000000000' }}</div>
                   <div class="user-level">Lv{{ authStore.user.level || 1 }}</div>
                 </div>
               </div>
           
-              <div class="user-balance">
+              <div class="user-balance" @click="goToAccountSettings('/funds')">
                 <span class="balance-label">资金</span>
-                <span class="balance-amount">¥{{ authStore.user.balance || '0' }}</span>
-                <button class="recharge-btn">充值</button>
-                <button class="withdraw-btn">提现</button>
+                <span class="balance-amount">¥{{ authStore.user?.balance || '0' }}</span>
+                <button class="recharge-btn" @click.stop="goToAccountSettings('/funds')">充值</button>
+                
               </div>
               <div class="user-actions">
-                <a href="#" class="action-link">我的交易</a>
-                <a href="#" class="action-link">我要反馈</a>
-                <a href="#" class="logout-link" @click.prevent="authStore.logout">退出登录</a>
+                <a href="#" class="action-link" @click.prevent="goToAccountSettings('/transactions')">我的交易</a>
+                <a href="#" class="action-link" @click.prevent="goToAccountSettings('/feedback')">我要反馈</a>
+                <a href="#" class="logout-link" @click.prevent="handleLogout">退出登录</a>
               </div>
             </div>
           </div>
@@ -71,15 +71,33 @@
 
 <script>
 import { useAuthStore } from './store/auth';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, getCurrentInstance, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 export default {
   name: 'App',
   setup() {
+    const handleAvatarError = (e) => {
+      e.target.src = `${$imageBaseUrl}default-avatar.svg`;
+    };
+    
     // 获取认证状态管理Store
     const authStore = useAuthStore();
+    const router = useRouter();
     const showUserInfo = ref(false);
-let infoTimeout;
+    const instance = getCurrentInstance();
+    const $imageBaseUrl = instance.appContext.config.globalProperties.$imageBaseUrl;
+
+    const goToAccountSettings = (path = '') => {
+      router.push(`/account-settings${path}`);
+    };
+
+    const handleLogout = () => {
+      authStore.logout();
+      router.push('/');
+    };
+
+    let infoTimeout;
 
 const handleMouseEnter = () => {
   clearTimeout(infoTimeout);
@@ -89,7 +107,7 @@ const handleMouseEnter = () => {
 const handleMouseLeave = () => {
   infoTimeout = setTimeout(() => {
   showUserInfo.value = false;
-}, 800);
+}, 400);
 };
 
     // 页面加载时初始化认证状态
@@ -97,11 +115,19 @@ const handleMouseLeave = () => {
       authStore.initAuthState();
     });
 
+    onUnmounted(() => {
+      clearTimeout(infoTimeout);
+    });
+
     return {
       authStore,
       showUserInfo,
       handleMouseEnter,
-      handleMouseLeave
+      handleMouseLeave,
+      goToAccountSettings,
+      $imageBaseUrl,
+      handleAvatarError,
+      handleLogout
     }
   }
 }
@@ -220,11 +246,12 @@ const handleMouseLeave = () => {
   top: 100%;
   right: 0;
   margin-top: 5px;
-  width: 280px;
+  width: 180px;
   background-color: #2c3e50;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   padding: 15px;
+  padding-bottom: 0px;
   z-index: 100;
 }
 
@@ -270,6 +297,25 @@ const handleMouseLeave = () => {
 }
 
 .user-balance {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 0;
+}
+
+.user-actions {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.user-actions .action-link, .user-actions .logout-link {
+  display: inline-block;
+  text-align: center;
+  margin: 0 10px;
+}
+
+.funds-area {
   display: flex;
   align-items: center;
   justify-content: space-between;
