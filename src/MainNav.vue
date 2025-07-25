@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <!-- 顶部导航栏 -->
-    <header class="header">
+    <header class="header" v-show="$route.meta.showNav !== false">
       <div class="logo">
         <img src="@/assets/logo.jpg" alt="DEBUFF Logo" class="logo-img">
       </div>
@@ -29,13 +29,13 @@
 
           <!-- 用户头像及信息 -->
           <div class="user-profile" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
-            <img :src="`${$imageBaseUrl}${authStore.user.avatarUrl || 'default-avatar.svg'}`" alt="用户头像" class="info-avatar" @click="goToAccountSettings('/profile')">
+            <img :src="`${$imageBaseUrl}${authStore.user.avatarUrl || '/avatars/default-avatar.svg'}`" alt="用户头像" class="info-avatar" @error="handleAvatarError($event)" @click="goToAccountSettings('/profile')">
             <span class="level-badge">Lv{{ authStore.user.level || 1 }}</span>
 
             <!-- 用户信息卡片（下拉菜单） -->
             <div class="user-info-card" v-if="showUserInfo">
               <div class="user-info-header">
-                <img :src="`${$imageBaseUrl}${authStore.user.avatarUrl || 'default-avatar-2.svg'}`" alt="用户头像" class="info-avatar">
+                <img :src="`${$imageBaseUrl}${authStore.user.avatarUrl || '/avatars/default-avatar.svg'}`" alt="用户头像" class="info-avatar" @error="handleAvatarError($event)" @click="goToAccountSettings('/profile')">
                 <div class="user-info-main" @click="goToAccountSettings('/profile')">
                   <div class="username">{{ authStore.user.username || '未知用户' }}</div>
                   <div class="user-id">U{{ authStore.user.id || '0000000000' }}</div>
@@ -45,14 +45,14 @@
           
               <div class="user-balance" @click="goToAccountSettings('/funds')">
                 <span class="balance-label">资金</span>
-                <span class="balance-amount">¥{{ authStore.user.balance || '0' }}</span>
+                <span class="balance-amount">¥{{ authStore.user?.balance || '0' }}</span>
                 <button class="recharge-btn" @click.stop="goToAccountSettings('/funds')">充值</button>
                 
               </div>
               <div class="user-actions">
                 <a href="#" class="action-link" @click.prevent="goToAccountSettings('/transactions')">我的交易</a>
                 <a href="#" class="action-link" @click.prevent="goToAccountSettings('/feedback')">我要反馈</a>
-                <a href="#" class="logout-link" @click.prevent="authStore.logout">退出登录</a>
+                <a href="#" class="logout-link" @click.prevent="handleLogout">退出登录</a>
               </div>
             </div>
           </div>
@@ -71,12 +71,16 @@
 
 <script>
 import { useAuthStore } from './store/auth';
-import { onMounted, ref, getCurrentInstance } from 'vue';
+import { onMounted, ref, getCurrentInstance, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 export default {
   name: 'App',
   setup() {
+    const handleAvatarError = (e) => {
+      e.target.src = `${$imageBaseUrl}default-avatar.svg`;
+    };
+    
     // 获取认证状态管理Store
     const authStore = useAuthStore();
     const router = useRouter();
@@ -88,7 +92,12 @@ export default {
       router.push(`/account-settings${path}`);
     };
 
-let infoTimeout;
+    const handleLogout = () => {
+      authStore.logout();
+      router.push('/');
+    };
+
+    let infoTimeout;
 
 const handleMouseEnter = () => {
   clearTimeout(infoTimeout);
@@ -98,12 +107,16 @@ const handleMouseEnter = () => {
 const handleMouseLeave = () => {
   infoTimeout = setTimeout(() => {
   showUserInfo.value = false;
-}, 800);
+}, 400);
 };
 
     // 页面加载时初始化认证状态
     onMounted(() => {
       authStore.initAuthState();
+    });
+
+    onUnmounted(() => {
+      clearTimeout(infoTimeout);
     });
 
     return {
@@ -112,7 +125,9 @@ const handleMouseLeave = () => {
       handleMouseEnter,
       handleMouseLeave,
       goToAccountSettings,
-      $imageBaseUrl
+      $imageBaseUrl,
+      handleAvatarError,
+      handleLogout
     }
   }
 }
