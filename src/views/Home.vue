@@ -3,8 +3,8 @@
     <!-- 首页横幅区域 -->
     <section class="hero">
       <div class="hero-content">
-        <h1>画加APP</h1>
-        <p>简单便捷定制你的玩家秀</p>
+        <h1>卖枪皮急出？来Debuff秒速变现！</h1>
+        <p>告别繁琐，一键成交 ！</p>
         <div class="hero-buttons">
           <button class="primary-btn">立即开始</button>
         </div>
