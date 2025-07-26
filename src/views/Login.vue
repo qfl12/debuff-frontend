@@ -73,6 +73,8 @@
         <div class="form-footer">
           <span>还没有账号？</span>
           <router-link to="/register" class="register-link">立即注册</router-link>
+          <span> | </span>
+          <a href="/reset-password" class="forgot-password-link" target="_blank">忘记密码？</a>
         </div>
       </form>
     </div>

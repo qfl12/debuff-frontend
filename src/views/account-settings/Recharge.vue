@@ -15,30 +15,18 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import { getUserInfo } from '@/utils/api';
-import { ElMessage } from 'element-plus';
+import { ref } from 'vue';
 
-
-
-
+import { useAuthStore } from '@/store/auth';
 import { requestAlipayPayment } from '@/utils/api';
 
 export default {
   name: 'AccountRecharge',
   setup() {
 
+    const authStore = useAuthStore();
     const amount = ref('');
     const amountOptions = [100, 200, 500, 1000, 2000];
-    const userId = ref(null);
-
-    onMounted(() => {
-      getUserInfo()
-        .then(({ data }) => {
-          userId.value = data.id;
-        })
-        .catch(() => ElMessage.error('获取用户信息失败'));
-    });
 
     const selectAmount = (option) => {
       amount.value = option;
@@ -52,7 +40,7 @@ export default {
 
       try {
         const response = await requestAlipayPayment({
-          userId: userId.value,
+          userId: authStore.user.id,
           amount: amount.value,
           type: 'recharge'
         });

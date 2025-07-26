@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/auth';
 import Home from '../views/Home/Home.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
+import ResetPassword from '../views/ResetPassword.vue';
 import Inventory from '../views/Home/Inventory.vue';
 import Selling from '../views/Home/Selling.vue';
 import Buying from '../views/Home/Buying.vue';
@@ -25,6 +26,7 @@ const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/login', name: 'Login', component: Login },
   { path: '/register', name: 'Register', component: Register },
+  { path: '/reset-password', name: 'ResetPassword', component: ResetPassword, meta: { showNav: false }},
   { path: '/inventory', name: 'Inventory', component: Inventory, meta: { requiresAuth: true }},
   { path: '/selling', name: 'Selling', component: Selling, meta: { requiresAuth: true }},
   { path: '/buying', name: 'Buying', component: Buying, meta: { requiresAuth: true }},

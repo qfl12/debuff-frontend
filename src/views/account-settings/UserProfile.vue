@@ -57,7 +57,7 @@
         <button class="action-btn" @click="handleChangeEmail">更换邮箱</button>
       </div>
 
-      <div class="security-item">
+      <!-- <div class="security-item">
         <div class="info-with-label">
           <span class="label">手机账号</span>
           <span class="status">
@@ -67,9 +67,9 @@
           </span>
         </div>
         <button class="action-btn" @click="handleChangePhone">更换手机</button>
-      </div>
+      </div> -->
 
-      <div class="security-item">
+      <!-- <div class="security-item">
         <div class="info-with-label">
           <span class="label">实名认证</span>
           <span class="status">
@@ -79,7 +79,7 @@
           </span>
         </div>
         <button class="action-btn" @click="handleIdentityVerify">前往认证</button>
-      </div>
+      </div> -->
 
       <div class="security-item">
           <div class="info-with-label">
@@ -93,7 +93,7 @@
           <button class="action-btn" v-if="!steamBound" @click="handleSteamBind">前往绑定</button>
           <button class="action-btn" v-if="steamBound" @click="handleSteamUnbind">解除绑定</button>
         </div>
-        <div class="security-item">
+        <!-- <div class="security-item">
           <div class="info-with-label">
             <span class="label">支付宝绑定</span>
             <span class="status">
@@ -103,7 +103,7 @@
             </span>
           </div>
           <button class="action-btn" @click="handleAlipayBind">前往绑定</button>
-        </div>
+        </div> -->
 
       <div class="security-item">
         <div class="info-with-label">
@@ -135,7 +135,7 @@
                 <el-icon class="help-icon"><QuestionFilled /></el-icon>
               </el-tooltip>
             </div>
-            <button class="save-small-btn" @click="saveApiKey">保存</button>
+            <button class="save-small-btn" @click="saveApiKey">修改</button>
           </div>
 
           <div class="form-group">
@@ -146,13 +146,47 @@
                 <el-icon class="help-icon"><QuestionFilled /></el-icon>
               </el-tooltip>
             </div>
-            <button class="save-small-btn" @click="saveTradeLink">保存</button>
+            <button class="save-small-btn" @click="saveTradeLink">修改</button>
           </div>
         </div>
 
       </div>
     </div>
   </div>
+     <!-- 编辑对话框 -->
+    <el-dialog title="修改昵称" v-model="editNicknameDialog" width="30%">
+      <el-input v-model="tempUsername" placeholder="请输入新昵称"></el-input>
+      <template #footer>
+        <el-button @click="editNicknameDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmEditNickname">确认</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog title="修改性别" v-model="editGenderDialog" width="30%">
+      <el-select v-model="tempGender" placeholder="请选择性别">
+        <el-option v-for="option in genderOptions" :key="option.value" :label="option.label" :value="option.value"></el-option>
+      </el-select>
+      <template #footer>
+        <el-button @click="editGenderDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmEditGender">确认</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog title="修改出生日期" v-model="editBirthDateDialog" width="30%">
+      <el-date-picker v-model="tempBirthDate" type="date" placeholder="选择日期"></el-date-picker>
+      <template #footer>
+        <el-button @click="editBirthDateDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmEditBirthDate">确认</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog title="修改个人简介" v-model="editBioDialog" width="50%">
+      <el-input type="textarea" v-model="tempBio" :rows="4" placeholder="请输入个人简介" maxlength="50" show-word-limit></el-input>
+      <template #footer>
+        <el-button @click="editBioDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmEditBio">确认</el-button>
+      </template>
+    </el-dialog>
 </template>
 
 
@@ -162,13 +196,22 @@ import { useAuthStore } from '../../store/auth';
 import { getUserInfo, uploadAvatar, updateUserInfo } from '../../utils/api';
 import { ref, onMounted, onBeforeUnmount, getCurrentInstance, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { ElMessage } from 'element-plus';
+
+import { ElMessage, ElDialog, ElInput, ElSelect, ElOption, ElDatePicker, ElButton } from 'element-plus';
 
 
 
 
 export default {
   name: 'UserProfilePage',
+  components: {
+    ElDialog,
+    ElInput,
+    ElSelect,
+    ElOption,
+    ElDatePicker,
+    ElButton
+  },
   setup() {
     const authStore = useAuthStore();
     const router = useRouter();
@@ -205,6 +248,17 @@ const loading = ref(false);
 const isMounted = ref(false);
 const messageListener = ref(null);
 
+// 编辑对话框状态
+const editNicknameDialog = ref(false);
+const editGenderDialog = ref(false);
+const editBirthDateDialog = ref(false);
+const editBioDialog = ref(false);
+
+// 临时编辑数据
+const tempUsername = ref('');
+const tempGender = ref('');
+const tempBirthDate = ref('');
+const tempBio = ref('');
 
     const openFileDialog = () => {
   fileInput.value.click();
@@ -240,22 +294,129 @@ const handleFileChange = async (e) => {
  */
 
 const handleEditNickname = async () => {
+  tempUsername.value = username.value;
+  editNicknameDialog.value = true;
+};
+
+const confirmEditNickname = async () => {
   try {
-    const { data } = await updateUserInfo({ username: username.value });
-    if (data.code === 200) {
-      authStore.user.username = username.value;
+    const response = await updateUserInfo({ username: tempUsername.value });
+    if (response.code === 200) {
+      username.value = tempUsername.value;
+      authStore.user.username = tempUsername.value;
       ElMessage.success('昵称修改成功');
+      editNicknameDialog.value = false;
     } else {
-      ElMessage.error(data.message || '昵称修改失败');
+      ElMessage.error(response.message || '昵称修改失败');
     }
   } catch (error) {
     ElMessage.error('昵称修改失败');
   }
 };
 
+const handleEditGender = () => {
+  tempGender.value = gender.value;
+  editGenderDialog.value = true;
+};
+
+const confirmEditGender = async () => {
+  try {
+    const response = await updateUserInfo({ gender: tempGender.value });
+    if (response.code === 200) {
+      gender.value = tempGender.value;
+      authStore.user.gender = tempGender.value;
+      ElMessage.success('性别修改成功');
+      editGenderDialog.value = false;
+    } else {
+      ElMessage.error(response.message || '性别修改失败');
+    }
+  } catch (error) {
+    ElMessage.error('性别修改失败');
+  }
+};
+
+const handleEditBirthDate = () => {
+  tempBirthDate.value = birthDate.value ? new Date(birthDate.value) : null;
+  editBirthDateDialog.value = true;
+};
+
+const confirmEditBirthDate = async () => {
+  try {
+    const date = new Date(tempBirthDate.value);
+const year = date.getFullYear();
+const month = String(date.getMonth() + 1).padStart(2, '0');
+const day = String(date.getDate()).padStart(2, '0');
+const formattedBirthDate = `${year}-${month}-${day}`;
+const response = await updateUserInfo({ birthDate: formattedBirthDate });
+    if (response.code === 200) {
+      birthDate.value = tempBirthDate.value.toLocaleDateString();
+      authStore.user.birthDate = tempBirthDate.value;
+      ElMessage.success('出生日期修改成功');
+      editBirthDateDialog.value = false;
+    } else {
+      ElMessage.error(response.message || '出生日期修改失败');
+    }
+  } catch (error) {
+    ElMessage.error('出生日期修改失败');
+  }
+};
+
+const handleEditBio = () => {
+  tempBio.value = bio.value;
+  editBioDialog.value = true;
+};
+
+const confirmEditBio = async () => {
+  try {
+    const response = await updateUserInfo({ bio: tempBio.value });
+    if (response.code === 200) {
+      bio.value = tempBio.value;
+      authStore.user.bio = tempBio.value;
+      ElMessage.success('个人简介修改成功');
+      editBioDialog.value = false;
+    } else {
+      ElMessage.error(response.message || '个人简介修改失败');
+    }
+  } catch (error) {
+    ElMessage.error('个人简介修改失败');
+  }
+};
+
 const handleChangeEmail = () => {
   // 跳转到邮箱更换页面或打开模态框
-  ElMessage.info('前往更换邮箱页面');
+  ElMessage.info('邮箱暂时不能更换');
+};
+
+/**
+ * 保存Steam API Key
+ */
+const saveApiKey = async () => {
+  try {
+    const response = await updateUserInfo({ apiKey: apiKey.value });
+    if (response.code === 200) {
+      ElMessage.success('API Key保存成功');
+    } else {
+      ElMessage.error(response.message || 'API Key保存失败');
+    }
+  } catch (error) {
+    ElMessage.error('API Key保存失败');
+  }
+};
+
+/**
+ * 保存Steam交易链接
+ */
+const saveTradeLink = async () => {
+  try {
+    const response = await updateUserInfo({ tradeLink: tradeLink.value });
+    if (response.code === 200) {
+      ElMessage.success('交易链接保存成功');
+    } else {
+      ElMessage.error(response.message || '交易链接保存失败');
+    }
+  } catch (error) {
+    ElMessage.error('交易链接保存失败');
+  }
 };
 
 const handleChangePhone = () => {
@@ -274,8 +435,8 @@ const handleAlipayBind = () => {
 };
 
 const handleChangePassword = () => {
-  // 跳转到密码修改页面
-  ElMessage.info('前往密码修改页面');
+  // 在新标签页打开密码重置页面并传递邮箱参数
+  window.open(`/reset-password?email=${encodeURIComponent(email.value)}`, '_blank');
 };
 
 /**
@@ -283,8 +444,8 @@ const handleChangePassword = () => {
  * 直接打开登录窗口并监听结果，增加窗口状态检查以区分不同错误类型
  */
 const handleSteamBind = () => {
-  //const steamLoginUrl = `http://192.168.110.7:8080/api/steam/auth/login`;
-  const steamLoginUrl = `http://localhost:8080/api/steam/auth/login`;
+  const steamLoginUrl = `http://192.168.110.7:8080/api/steam/auth/login`;
+  //const steamLoginUrl = `http://localhost:8080/api/steam/auth/login`;
 
   // 1. 打开真正的弹窗（宽高必须 >100 才能叫 popup）
   const popup = window.open(
@@ -300,7 +461,7 @@ const handleSteamBind = () => {
       ElMessage.error('请求超时，请重试');
       window.location.reload();
     }
-  }, 30000); // 30秒超时
+  }, 100000); // 30秒超时
 
   // 添加超时检查
   const steamBindTimeoutTimer = setTimeout(() => {
@@ -317,8 +478,8 @@ const handleSteamBind = () => {
   messageListener.value = (event) => {
       console.log('收到postMessage:', event);
       // 安全校验
-      //const allowedOrigins = [window.location.origin, 'http://192.168.110.7:8080'];
-      const allowedOrigins = [window.location.origin, 'http://localhost:8080'];
+      const allowedOrigins = [window.location.origin, 'http://192.168.110.7:8080'];
+      //const allowedOrigins = [window.location.origin, 'http://localhost:8080'];
       if (!allowedOrigins.includes(event.origin)) {
         console.warn('拒绝来自未授权源的消息:', event.origin);
         return;
@@ -351,6 +512,8 @@ const handleSteamBind = () => {
       } else {
         console.log('未知消息类型:', event.data?.type);
       }
+      // 强制页面刷新以更新steamId
+      window.location.reload();
   };
 
   window.addEventListener('message', messageListener.value);
@@ -361,21 +524,6 @@ const handleSteamBind = () => {
       window.removeEventListener('message', messageListener.value);
     }
   }, 1000);
-};
-
-const handleEditGender = () => {
-  // 实现性别修改逻辑，例如打开选择对话框
-  ElMessage.info('性别修改功能待实现');
-};
-
-const handleEditBirthDate = () => {
-  // 实现出生日期修改逻辑，例如打开日期选择器
-  ElMessage.info('出生日期修改功能待实现');
-};
-
-const handleEditBio = () => {
-  // 实现个人简介修改逻辑，例如打开文本输入框
-  ElMessage.info('个人简介修改功能待实现');
 };
 
 const formattedPhone = computed(() => {
@@ -495,6 +643,8 @@ const phoneVerified = computed(() => !!phone.value);
       gender.value = user.gender ?? '';
       birthDate.value = user.birthDate ? new Date(user.birthDate).toLocaleDateString() : '';
       bio.value = user.bio ?? '';
+      apiKey.value = user.apiKey ?? '';
+      tradeLink.value = user.tradeLink ?? '';
       // 模拟数据 - 实际项目中应从后端获取
       alipayAccount.value = user.alipayAccount ?? '';
       alipayVerified.value = !!user.alipayAccount;
@@ -538,18 +688,34 @@ const phoneVerified = computed(() => !!phone.value);
         handleChangePassword,
         handleSteamBind,
         handleEditGender,
+        gender,
+        steamBound,
+        editNicknameDialog,
+        editGenderDialog,
+        editBirthDateDialog,
+        editBioDialog,
+        tempUsername,
+        tempGender,
+        tempBirthDate,
+        tempBio,
+        genderOptions,
+        confirmEditNickname,
+        confirmEditGender,
         handleEditBirthDate,
+        confirmEditBirthDate,
         handleEditBio,
+        confirmEditBio,
         emailVerified,
         formattedPhone,
         phoneVerified,
         alipayAccount,
         formattedAlipay,
         handleChangeEmail,
-        steamBound
-      };
+        saveApiKey,
+        saveTradeLink
+    };
   }
-};
+}
 </script>
 
 <style scoped>

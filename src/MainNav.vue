@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <!-- 顶部导航栏 -->
-    <header class="header">
+    <header class="header" v-show="$route.meta.showNav !== false">
       <div class="logo">
         <img src="@/assets/logo.jpg" alt="DEBUFF Logo" class="logo-img">
       </div>

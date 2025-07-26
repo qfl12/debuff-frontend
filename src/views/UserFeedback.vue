@@ -38,10 +38,8 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import { getUserInfo } from '@/utils/api';
-import { ElMessage } from 'element-plus';
-import { useAuthStore } from '../../store/auth';
+import { ref } from 'vue';
+import { useAuthStore } from '../store/auth';
 import { useRouter } from 'vue-router';
 
 export default {
@@ -50,19 +48,10 @@ export default {
     const authStore = useAuthStore();
     const router = useRouter();
     const feedbackType = ref('');
-const feedbackContent = ref('');
-const contactInfo = ref('');
-const userId = ref('');
+    const feedbackContent = ref('');
+    const contactInfo = ref('');
 
-onMounted(() => {
-  getUserInfo()
-    .then(({ data }) => {
-      userId.value = data.id;
-    })
-    .catch(() => ElMessage.error('获取用户信息失败'));
-});
-
-const submitFeedback = () => {
+    const submitFeedback = () => {
       // 模拟提交反馈，实际项目中应发送API请求
       console.log('提交反馈:', {
         userId: authStore.user.id,
