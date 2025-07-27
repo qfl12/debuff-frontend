@@ -1,0 +1,36 @@
+/* 错误图标容器样式 - 增强特异性 */
+body .el-message.el-message--error i.el-icon.el-message__icon.el-message-icon--error {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+    overflow: hidden !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+}
+
+/* SVG错误图标尺寸控制 - 解决大viewBox问题 */
+body .el-message.el-message--error i.el-icon.el-message__icon.el-message-icon--error svg {
+    width: 1024px !important;
+    height: 1024px !important;
+    min-width: auto !important;
+    min-height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: contain !important;
+    flex-shrink: 0 !important;
+    transform: scale(0.015625) translate(-50%, -50%) !important; /* 合并缩放和位移 */
+    transform-origin: center !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+}
