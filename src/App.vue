@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <!-- 顶部导航栏 -->
-    <header class="header" v-show="$route.meta.showNav !== false">
+    <header class="header">
       <div class="logo">
         <img src="@/assets/logo.jpg" alt="DEBUFF Logo" class="logo-img">
       </div>
@@ -9,7 +9,7 @@
       <!-- 主导航菜单 -->
       <nav class="main-nav">
         <router-link to="/" class="nav-text-link">首页</router-link>
-        <router-link to="/marketplace" class="nav-text-link">饰品市场</router-link>
+        <router-link to="/market" class="nav-text-link">饰品市场</router-link>
 
       </nav>
 
@@ -20,39 +20,39 @@
           <div class="user-nav-links">
             <router-link to="/inventory" class="nav-text-link">我的库存</router-link>
             <router-link to="/selling" class="nav-text-link">我的出售</router-link>
-            <!-- <router-link to="/buying" class="nav-text-link">我的求购</router-link> -->
+            <router-link to="/buying" class="nav-text-link">我的求购</router-link>
           </div>
           <!-- 邮件图标 -->
-<!--          <div class="mail-icon">-->
-<!--            <img src="@/assets/mail-icon.svg" alt="邮件" class="icon">-->
-<!--          </div>-->
+          <div class="mail-icon">
+            <img src="@/assets/mail-icon.svg" alt="邮件" class="icon">
+          </div>
 
           <!-- 用户头像及信息 -->
           <div class="user-profile" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
-            <img :src="`${$imageBaseUrl}${authStore.user.avatarUrl || '/avatars/default-avatar.svg'}`" alt="用户头像" class="info-avatar" @error="handleAvatarError($event)" @click="goToAccountSettings('/profile')">
+            <img :src="authStore.user.avatar || '@/assets/default-avatar.svg'" alt="用户头像" class="avatar">
             <span class="level-badge">Lv{{ authStore.user.level || 1 }}</span>
 
             <!-- 用户信息卡片（下拉菜单） -->
             <div class="user-info-card" v-if="showUserInfo">
               <div class="user-info-header">
-                <img :src="`${$imageBaseUrl}${authStore.user.avatarUrl || '/avatars/default-avatar.svg'}`" alt="用户头像" class="info-avatar" @error="handleAvatarError($event)" @click="goToAccountSettings('/profile')">
-                <div class="user-info-main" @click="goToAccountSettings('/profile')">
+                <img :src="authStore.user.avatar || '@/assets/default-avatar.svg'" alt="用户头像" class="info-avatar">
+                <div class="user-info-main">
                   <div class="username">{{ authStore.user.username || '未知用户' }}</div>
                   <div class="user-id">U{{ authStore.user.id || '0000000000' }}</div>
                   <div class="user-level">Lv{{ authStore.user.level || 1 }}</div>
                 </div>
               </div>
           
-              <div class="user-balance" @click="goToAccountSettings('/funds')">
+              <div class="user-balance">
                 <span class="balance-label">资金</span>
-                <span class="balance-amount">¥{{ authStore.user?.balance || '0' }}</span>
-                <button class="recharge-btn" @click.stop="goToAccountSettings('/funds')">充值</button>
-                
+                <span class="balance-amount">¥{{ authStore.user.balance || '0' }}</span>
+                <button class="recharge-btn">充值</button>
+                <button class="withdraw-btn">提现</button>
               </div>
               <div class="user-actions">
-                <a href="#" class="action-link" @click.prevent="goToAccountSettings('/transactions')">我的交易</a>
-                <a href="#" class="action-link" @click.prevent="goToAccountSettings('/feedback')">我要反馈</a>
-                <a href="#" class="logout-link" @click.prevent="handleLogout">退出登录</a>
+                <a href="#" class="action-link">我的交易</a>
+                <a href="#" class="action-link">我要反馈</a>
+                <a href="#" class="logout-link" @click.prevent="authStore.logout">退出登录</a>
               </div>
             </div>
           </div>
@@ -71,33 +71,15 @@
 
 <script>
 import { useAuthStore } from './store/auth';
-import { onMounted, ref, getCurrentInstance, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, ref } from 'vue';
 
 export default {
   name: 'App',
   setup() {
-    const handleAvatarError = (e) => {
-      e.target.src = `${$imageBaseUrl}default-avatar.svg`;
-    };
-    
     // 获取认证状态管理Store
     const authStore = useAuthStore();
-    const router = useRouter();
     const showUserInfo = ref(false);
-    const instance = getCurrentInstance();
-    const $imageBaseUrl = instance.appContext.config.globalProperties.$imageBaseUrl;
-
-    const goToAccountSettings = (path = '') => {
-      router.push(`/account-settings${path}`);
-    };
-
-    const handleLogout = () => {
-      authStore.logout();
-      router.push('/');
-    };
-
-    let infoTimeout;
+let infoTimeout;
 
 const handleMouseEnter = () => {
   clearTimeout(infoTimeout);
@@ -107,7 +89,7 @@ const handleMouseEnter = () => {
 const handleMouseLeave = () => {
   infoTimeout = setTimeout(() => {
   showUserInfo.value = false;
-}, 400);
+}, 800);
 };
 
     // 页面加载时初始化认证状态
@@ -115,19 +97,11 @@ const handleMouseLeave = () => {
       authStore.initAuthState();
     });
 
-    onUnmounted(() => {
-      clearTimeout(infoTimeout);
-    });
-
     return {
       authStore,
       showUserInfo,
       handleMouseEnter,
-      handleMouseLeave,
-      goToAccountSettings,
-      $imageBaseUrl,
-      handleAvatarError,
-      handleLogout
+      handleMouseLeave
     }
   }
 }
@@ -246,12 +220,11 @@ const handleMouseLeave = () => {
   top: 100%;
   right: 0;
   margin-top: 5px;
-  width: 180px;
+  width: 280px;
   background-color: #2c3e50;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   padding: 15px;
-  padding-bottom: 0px;
   z-index: 100;
 }
 
@@ -297,25 +270,6 @@ const handleMouseLeave = () => {
 }
 
 .user-balance {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  padding: 15px 0;
-}
-
-.user-actions {
-  text-align: center;
-  padding: 10px 0;
-}
-
-.user-actions .action-link, .user-actions .logout-link {
-  display: inline-block;
-  text-align: center;
-  margin: 0 10px;
-}
-
-.funds-area {
   display: flex;
   align-items: center;
   justify-content: space-between;

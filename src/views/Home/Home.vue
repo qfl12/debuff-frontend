@@ -3,11 +3,8 @@
     <!-- 首页横幅区域 -->
     <section class="hero">
       <div class="hero-content">
-        <h1>画加APP</h1>
-        <p>简单便捷定制你的玩家秀</p>
-        <div class="hero-buttons">
-          <button class="primary-btn">立即开始</button>
-        </div>
+        <h1>卖枪皮急出？来Debuff秒速变现！</h1>
+        <p>我知道你为了什么而来</p>
       </div>
       <div class="hero-images">
         <!-- 示例图片，实际项目中替换为真实图片路径 -->
@@ -28,6 +25,7 @@
         <!-- 动态渲染随机上架饰品 -->
         <div v-for="item in randomListings" :key="item.listingId" class="item-card">
           <router-link :to="`/market/item/${item.listingId}`">
+            <div class="item-tag" v-if="item.marketName?.match(/\((.*?)\)/)?.[1]" :style="{ backgroundColor: getConditionColor(item.marketName?.match(/\((.*?)\)/)?.[1]) }">{{ item.marketName.match(/\((.*?)\)/)[1] }}</div>
             <img :src="`https://steamcommunity-a.akamaihd.net/economy/image/${item.imageUrl}/400x600?allow_animated=1`" :alt="item.name" class="item-image">
           </router-link>
           <div class="item-info">
@@ -35,7 +33,7 @@
             <p class="item-description">{{ truncateText(item.sellerNote || '无描述信息', 10) }}</p>
             <div class="price-section">
               <p class="price">¥{{ item.price }}</p>
-              <button class="buy-btn">购买</button>
+              <button class="buy-btn" @click="goToItemDetail(item.listingId)">购买</button>
             </div>
             <p class="seller-info">卖家: {{ item.sellerUsername || '未知卖家' }}</p>
           </div>
@@ -47,6 +45,7 @@
 
 <script>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import marketApi from '../../services/marketApi';
 
 export default {
@@ -68,6 +67,32 @@ export default {
       }
     };
 
+    /**
+ * 根据物品状态获取对应的背景颜色
+ * @param {string} condition - 物品状态（崭新出厂、略有磨损等）
+ * @returns {string} 对应的背景颜色值
+ */
+const router = useRouter();
+
+/**
+ * 跳转到商品详情页面
+ * @param {number} listingId - 商品 listing ID
+ */
+const goToItemDetail = (listingId) => {
+  router.push(`/market/item/${listingId}`);
+};
+
+const getConditionColor = (condition) => {
+  const colors = {
+    '崭新出厂': '#86B5E5',
+    '略有磨损': '#A0C3E8',
+    '久经沙场': '#C7D5E0',
+    '战痕累累': '#D9C9B0',
+    '破损不堪': '#B8A693'
+  };
+  return colors[condition] || '#CCCCCC';
+};
+
     // 组件挂载时获取随机上架饰品
     onMounted(() => {
       fetchRandomListings();
@@ -86,7 +111,8 @@ export default {
 
     return {
       randomListings,
-      truncateText
+      truncateText,
+      getConditionColor
     };
   }
 }
@@ -184,6 +210,18 @@ export default {
   color: #1a1a2e;
 }
 
+.item-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  z-index: 1;
+}
+
 .view-all {
   color: #4CAF50;
   text-decoration: none;
@@ -206,6 +244,7 @@ export default {
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s;
+  position: relative;
 }
 
 .item-card:hover {

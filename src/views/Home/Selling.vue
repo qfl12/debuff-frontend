@@ -40,7 +40,10 @@
         <img src="../../assets/remove-icon.svg" alt="下架">
       </button>
     </div>
-    <img :src="`https://steamcommunity-a.akamaihd.net/economy/image/${item.image_url}/330x192?allow_animated=1`" :alt="item.item_name" class="item-image">
+    <div class="item-image-container">
+  <div class="item-tag" v-if="getCondition(item.market_name)" :style="{ backgroundColor: getConditionColor(getCondition(item.market_name)) }">{{ getCondition(item.market_name) }}</div>
+  <img :src="`https://steamcommunity-a.akamaihd.net/economy/image/${item.image_url}/330x192?allow_animated=1`" :alt="item.item_name" class="item-image">
+</div>
     <div class="item-info">
       <h3 class="item-name">{{ item.item_name?.split('(')[0]?.trim() || '未知物品' }}</h3>
       <p class="item-price">¥{{ item.price.toFixed(2) }}</p>
@@ -69,7 +72,20 @@
             <p>您当前没有交易中的饰品</p>
           </div>
           <div class="items-list" v-else>
-            <!-- 交易中商品列表将在这里显示 -->
+            <div class="item-card" v-for="item in tradingItems" :key="item.id">
+              <div class="item-image-container">
+                <div class="item-tag" v-if="getCondition(item.itemName)" :style="{ backgroundColor: getConditionColor(getCondition(item.itemName)) }">{{ getCondition(item.itemName) }}</div>
+                <img :src="`https://steamcommunity-a.akamaihd.net/economy/image/${item.item.imageUrl}/330x192?allow_animated=1`" :alt="item.itemName" class="item-image">
+              </div>
+              <div class="item-info">
+                <h3 class="item-name">{{ item.name?.split('(')[0]?.trim() || '未知物品' }}</h3>
+                <p class="item-price">¥{{ item.marketListing.price.toFixed(2) }}</p>
+                <div class="item-meta">
+                  <span class="item-status" :style="getStatusColor('TRADING')">{{ getStatusText('TRADING') }}</span><span class="tradeoffer-id" v-if="item.tradeofferid">交易ID: {{ item.tradeofferid }}</span>
+                  <span class="item-time">{{ formatTime(item.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </el-tab-pane>
@@ -80,7 +96,16 @@
             <p>您当前没有交易完成的饰品</p>
           </div>
           <div class="items-list" v-else>
-            <!-- 交易完成商品列表将在这里显示 -->
+            <div class="item-card" v-for="item in completedItems" :key="item.id">
+              <div class="item-info">
+                <div class="item-tag" v-if="getCondition(item.itemName)" :style="{ backgroundColor: getConditionColor(getCondition(item.itemName)) }">{{ getCondition(item.itemName) }}</div>
+                <h3 class="item-name">{{ item.itemName?.split('(')[0]?.trim() || '未知物品' }}</h3>
+                <div class="item-meta">
+                  <span class="item-status" :style="getStatusColor('COMPLETED')">{{ getStatusText('COMPLETED') }}</span>
+                  <span class="item-time">{{ formatTime(item.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </el-tab-pane>
@@ -112,6 +137,11 @@ export default {
   },
   setup() {
     const authStore = useAuthStore();
+const isAuthInitialized = ref(false);
+authStore.initAuthState();
+isAuthInitialized.value = true;
+console.log('用户认证状态初始化完成:', authStore.user);
+console.log('用户认证状态:', authStore.user);
     // 当前激活的标签页
     const activeTab = ref('onSale');
     // 数据加载状态
@@ -178,7 +208,34 @@ export default {
     /**
      * 获取状态颜色
      */
-    const getStatusColor = (status) => {
+    /**
+ * 从物品名称中提取品质状态
+ * @param {string} itemName - 物品名称
+ * @returns {string|null} 提取的品质状态或null
+ */
+const getCondition = (itemName) => {
+  if (!itemName) return null;
+  const match = itemName.match(/\((.*?)\)/);
+  return match ? match[1] : null;
+};
+
+/**
+ * 根据品质状态获取对应的背景颜色
+ * @param {string} condition - 物品品质状态
+ * @returns {string} 背景颜色值
+ */
+const getConditionColor = (condition) => {
+  const colors = {
+    '崭新出厂': '#86B5E5',
+    '略有磨损': '#A0C3E8',
+    '久经沙场': '#C7D5E0',
+    '战痕累累': '#D9C9B0',
+    '破损不堪': '#B8A693'
+  };
+  return colors[condition] || '#CCCCCC';
+};
+
+const getStatusColor = (status) => {
       const colorMap = {
         'ON_SALE': '#4CAF50',
         'TRADING': '#FF9800',
@@ -301,11 +358,80 @@ export default {
     };
 
     /**
+     * 获取交易中商品列表
+     */
+    const fetchTradingItems = async () => {
+      if (!authStore.isLoggedIn) return;
+
+      const loadingInstance = ElLoading.service({
+        lock: true,
+        text: '加载中...',
+        background: 'rgba(0, 0, 0, 0.7)'
+      });
+
+      try {
+        if (!authStore.user || !authStore.user.userId) {
+    if (isAuthInitialized.value) {
+      console.error('用户信息不完整:', authStore.user);
+      ElMessage.error('用户信息获取失败，请重新登录');
+    }
+    return;
+  }
+const response = await service.get(`/tradeconfirmations/user-trades?userId=${Number(authStore.user.userId)}&status=TRADING`);
+        tradingItems.value = response || []; // 直接赋值数组
+    console.log('获取交易中商品成功:', response);
+
+      } catch (error) {
+        ElMessage.error('网络错误，无法获取交易中商品');
+        console.error('获取交易中商品失败:', error);
+      } finally {
+        loadingInstance.close();
+      }
+    };
+
+    /**
+     * 获取交易完成商品列表
+     */
+    const fetchCompletedItems = async () => {
+      if (!authStore.isLoggedIn) return;
+
+      const loadingInstance = ElLoading.service({
+        lock: true,
+        text: '加载中...',
+        background: 'rgba(0, 0, 0, 0.7)'
+      });
+
+      try {
+        if (!authStore.user || !authStore.user.userId) {
+    if (isAuthInitialized.value) {
+      ElMessage.error('用户信息获取失败，请重新登录');
+    }
+    return;
+  }
+const response = await service.get(`/tradeconfirmations/user-trades?userId=${Number(authStore.user.userId)}&status=COMPLETED`);
+        tradingItems.value = response || []; // 直接赋值数组
+    console.log('获取交易中商品成功:', response);
+
+      } catch (error) {
+        ElMessage.error('网络错误，无法获取交易完成商品');
+        console.error('获取交易完成商品失败:', error);
+      } finally {
+        loadingInstance.close();
+      }
+    };
+
+    /**
      * 处理分页变更
      */
     const handlePageChange = (page) => {
       currentPage.value = page;
-      fetchOnSaleItems();
+      if (activeTab.value === 'onSale') {
+        fetchOnSaleItems();
+      } else if (activeTab.value === 'trading') {
+        fetchTradingItems();
+      } else if (activeTab.value === 'completed') {
+        fetchCompletedItems();
+      }
     };
 
     /**
@@ -314,13 +440,23 @@ export default {
     const handlePageSizeChange = (size) => {
       pageSize.value = size;
       currentPage.value = 1;
-      fetchOnSaleItems();
+      if (activeTab.value === 'onSale') {
+        fetchOnSaleItems();
+      } else if (activeTab.value === 'trading') {
+        fetchTradingItems();
+      } else if (activeTab.value === 'completed') {
+        fetchCompletedItems();
+      }
     };
 
     // 页面加载时获取数据
     onMounted(() => {
       if (activeTab.value === 'onSale') {
         fetchOnSaleItems();
+      } else if (activeTab.value === 'trading') {
+        fetchTradingItems();
+      } else if (activeTab.value === 'completed') {
+        fetchCompletedItems();
       }
     });
 
@@ -328,6 +464,10 @@ export default {
     watch(activeTab, (newTab) => {
       if (newTab === 'onSale') {
         fetchOnSaleItems();
+      } else if (newTab === 'trading') {
+        fetchTradingItems();
+      } else if (newTab === 'completed') {
+        fetchCompletedItems();
       }
     });
 
@@ -354,6 +494,8 @@ export default {
       isEditDialogVisible,
       editForm,
       editFormRef,
+      getCondition,
+      getConditionColor,
     };
   }
 }
@@ -457,6 +599,10 @@ export default {
   filter: invert(1);
 }
 
+.item-image-container {
+  position: relative;
+  width: 100%;
+}
 .item-image {
   width: 100%;
   height: 160px;
@@ -464,6 +610,17 @@ export default {
   margin-bottom: 10px;
   background-color: #f5f5f5;
   border-radius: 4px;
+}
+.item-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  z-index: 1;
 }
 
 .item-name {

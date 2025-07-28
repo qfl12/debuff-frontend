@@ -80,7 +80,7 @@
         </div>
         <button class="action-btn" @click="handleIdentityVerify">前往认证</button>
       </div> -->
-
+<!-- 
       <div class="security-item">
           <div class="info-with-label">
             <span class="label">Steam绑定</span>
@@ -92,7 +92,7 @@
           </div>
           <button class="action-btn" v-if="!steamBound" @click="handleSteamBind">前往绑定</button>
           <button class="action-btn" v-if="steamBound" @click="handleSteamUnbind">解除绑定</button>
-        </div>
+        </div> -->
         <!-- <div class="security-item">
           <div class="info-with-label">
             <span class="label">支付宝绑定</span>
@@ -128,9 +128,9 @@
 
         <div class="steam-api">
           <div class="form-group">
-            <label>API key</label>
+            <label>steamloginsecure令牌</label>
             <div class="input-with-help">
-              <input type="text" v-model="apiKey" placeholder="请输入API key">
+              <input type="text" v-model="apiKey" placeholder="请输入steamloginsecure令牌">
               <el-tooltip effect="dark" content="前往Steam获取API Key" placement="top">
                 <el-icon class="help-icon"><QuestionFilled /></el-icon>
               </el-tooltip>
@@ -394,12 +394,12 @@ const saveApiKey = async () => {
   try {
     const response = await updateUserInfo({ apiKey: apiKey.value });
     if (response.code === 200) {
-      ElMessage.success('API Key保存成功');
+      ElMessage.success('steamloginsecure令牌保存成功');
     } else {
-      ElMessage.error(response.message || 'API Key保存失败');
+      ElMessage.error(response.message || 'steamloginsecure令牌保存失败');
     }
   } catch (error) {
-    ElMessage.error('API Key保存失败');
+    ElMessage.error('steamloginsecure令牌保存失败');
   }
 };
 

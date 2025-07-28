@@ -8,8 +8,8 @@ module.exports = defineConfig({
     proxy: {
       // 匹配所有以 '/api' 开头的请求路径
       '/api': {
-          //target: 'http://localhost:8080', // 使用localhost作为后端API的基础路径
-          target: 'http://192.168.110.7:8080', // 旧IP配置（已注释）
+          target: 'http://localhost:8080', // 使用localhost作为后端API的基础路径
+          //target: 'http://192.168.110.7:8080', // 旧IP配置（已注释）
         ws: true, // 支持WebSocket
         changeOrigin: true, // 允许跨域请求
         pathRewrite: {

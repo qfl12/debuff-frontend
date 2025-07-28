@@ -75,7 +75,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { ElMessageBox, ElMessage } from 'element-plus';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import marketApi from '../../services/marketApi';
 
@@ -83,6 +83,7 @@ export default {
   name: 'ItemDetailView',
   setup() {
     const route = useRoute();
+const router = useRouter();
   const authStore = useAuthStore();
     authStore.initAuthState();
   const item = ref(null);
@@ -119,6 +120,11 @@ export default {
               console.log('authStore中的userId:', storeUserId);
               const userId = localStorageUserId || storeUserId;
           console.log('最终获取的userId:', userId);
+          // 检查买家和卖家是否为同一人
+          if (item.value.sellerId === userId) {
+            ElMessage.error('不能购买自己发布的商品');
+            return;
+          }
           if (!userId) {
             ElMessage.error('请先登录');
             return;
@@ -128,14 +134,114 @@ export default {
           const response = await marketApi.purchaseItem(purchaseParams);
           ElMessage.success('购买请求已提交，请等待交易完成');
           // 可以在这里跳转到交易确认页面
-          route.push({ name: 'TradeConfirmation', params: { orderId: response.data.orderId } });
+          try {
+  await router.push({ name: 'TradeConfirmation', params: { orderId: response.orderId } });
+} catch (e) {
+  console.error('路由跳转失败:', e);
+  ElMessage.error('交易确认页面无法访问，请稍后重试或联系客服');
+}
         }
       } catch (err) {
         if (err === 'cancel') {
           ElMessage.info('已取消购买');
           return;
         }
-        ElMessage.error(err.response?.data?.message || '购买失败，请稍后重试');
+        // 全面错误信息处理，优先使用后端返回消息
+          let errorMessage = '购买失败，请稍后重试';
+          
+          // 网络错误处理（无响应情况）
+          if (!err.response) {
+            errorMessage = err.message || errorMessage;
+          } else {
+            // 服务器响应错误处理
+            const status = err.response.status;
+            const data = err.response.data;
+            
+            // 多维度提取服务器错误信息，覆盖更多响应格式
+          // 1. 尝试解析可能包含嵌套JSON的message字段
+          let parsedMessage = null;
+          if (typeof data?.message === 'string') {
+            try {
+              // 尝试提取JSON格式的错误信息
+              const jsonStart = data.message.indexOf('{');
+              const jsonEnd = data.message.lastIndexOf('}') + 1;
+              if (jsonStart > -1 && jsonEnd > jsonStart) {
+                parsedMessage = JSON.parse(data.message.substring(jsonStart, jsonEnd));
+              }
+            } catch (e) {
+              // 不是JSON格式，忽略解析错误
+              console.debug('Error message is not JSON format:', e);
+            }
+          }
+          
+          // 2. 提取错误信息，优先使用解析后的嵌套错误
+          // 调整提取顺序，优先处理数组类型错误
+          const serverMessage = 
+                               // 1. 处理解析后的JSON错误中的数组
+                               (Array.isArray(parsedMessage?.error) ? parsedMessage.error[0] : parsedMessage?.error) ||
+                               parsedMessage?.message ||
+                               // 2. 处理直接返回的错误信息
+                               data?.message || 
+                               data?.msg || 
+                               // 3. 处理嵌套错误对象和数组
+                               (typeof data?.error === 'object' && data.error ? 
+                                 (Array.isArray(data.error) ? data.error[0] : 
+                                  Array.isArray(data.error.details) ? data.error.details[0]?.message : data.error.message) : null) ||
+                               // 4. 处理其他常见错误字段
+                               data?.errorMessage ||
+                               data?.errMsg ||
+                               data?.error_msg ||
+                               data?.detail;
+            
+            // 优先使用服务器返回的具体消息
+            if (serverMessage) {
+              errorMessage = serverMessage;
+            } else {
+              // 状态码 fallback 处理，默认显示原始响应数据
+              switch(status) {
+                case 401:
+                  errorMessage = '未经授权的访问或无效/过期的 steamloginsecure';
+                  break;
+                case 402:
+                  errorMessage = '超出速率限制（每天或每月）';
+                  break;
+                case 404:
+                  errorMessage = '未找到指定的游戏';
+                  break;
+                case 406:
+                  errorMessage = '提供的资产 ID 无效或待处理交易报价过多';
+                  break;
+                case 409:
+                  errorMessage = '您已向Umbrella发送了过多交易报价或有太多未完成的交易报价，请先取消一些再发送更多。';
+                  break;
+                case 410:
+                  errorMessage = '由于无效/过期的 steamloginsecure 而导致的未经授权的访问';
+                  break;
+                case 421:
+                  errorMessage = '请求正文的验证错误';
+                  break;
+                case 422:
+                  errorMessage = 'JSON 属性的验证错误';
+                  break;
+                case 429:
+                  errorMessage = '超出速率限制';
+                  break;
+                default:
+                  // 显示原始响应数据以便调试
+                  errorMessage = `服务器错误 (${status})：${JSON.stringify(data) || '请联系客服支持'}`;
+              }
+            }
+          }
+          
+          // 输出详细错误日志便于调试
+          console.error('购买请求错误详情:', {
+            status: err.response?.status,
+            responseData: err.response?.data,
+            message: err.message,
+            stack: err.stack
+          });
+          
+          ElMessage.error(errorMessage);
       } finally {
         loading.value = false;
       }

@@ -85,6 +85,7 @@
         <div class="item-card" v-for="item in paginatedItems" :key="item.listingId">
           <router-link :to="`/market/item/${item.listingId}`">
             <div class="item-image">
+              <div class="item-tag" v-if="item.marketName?.match(/\((.*?)\)/)?.[1]" :style="{ backgroundColor: getConditionColor(item.marketName?.match(/\((.*?)\)/)?.[1]) }">{{ item.marketName.match(/\((.*?)\)/)[1] }}</div>
               <img :src="`https://steamcommunity-a.akamaihd.net/economy/image/${item.imageUrl}/400x600?allow_animated=1`" :alt="item.name" @error="handleImageError($event)">
             </div>
             <div class="item-info">
@@ -224,6 +225,22 @@ const resetFilters = () => {
  * 当用户选择不同的每页显示数量时触发
  * 重置到第一页以确保分页数据正确
  */
+/**
+ * 根据物品状态获取对应的背景颜色
+ * @param {string} condition - 物品状态（崭新出厂、略有磨损等）
+ * @returns {string} 对应的背景颜色值
+ */
+const getConditionColor = (condition) => {
+  const colors = {
+    '崭新出厂': '#86B5E5',
+    '略有磨损': '#A0C3E8',
+    '久经沙场': '#C7D5E0',
+    '战痕累累': '#D9C9B0',
+    '破损不堪': '#B8A693'
+  };
+  return colors[condition] || '#CCCCCC';
+};
+
 const handlePageSizeChange = () => {
   currentPage.value = 1; // 重置到第一页
 };
@@ -370,8 +387,30 @@ onMounted(() => {
 .item-image {
   width: 100%;
   height: 200px;
-  object-fit: contain;
   background-color: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.item-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  z-index: 1;
+}
+
+.item-image img {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  transform: none !important;
 }
 
 .item-image img {
